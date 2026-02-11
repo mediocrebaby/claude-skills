@@ -1,136 +1,88 @@
 ---
 name: git-commit
-description: Craft clean, safe, and consistent Git commits. Use when the user asks to "commit" or "提交", write a commit message, split changes into multiple commits, stage hunks interactively, amend the last commit, create fixup/squash commits, prepare commits for PR review, or improve commit history (e.g., interactive rebase/autosquash) while avoiding accidental secrets or noisy diffs.
+description: 安全且一致的 Git 提交。当用户要求“commit”或“提交”时使用。同时需避免意外泄露密钥或包含无用的差异。
 ---
 
 # Git Commit
 
-## Overview
+## 概述
 
-Create high-quality commits with minimal risk: review changes, stage intentionally, write a clear message, and commit using the right Git options for the situation.
+以最低风险创建高质量提交：审查更改、有意识地暂存、编写清晰的信息，并根据具体情况选择正确的 Git 选项。
 
-## Default Guardrails
+## 默认防护机制
 
-- Prefer small, atomic commits that are easy to review and revert.
-- Do not run tests/compiles unless the user explicitly asks.
-- Never bypass hooks with `--no-verify` unless the user explicitly asks and understands the risk.
-- Avoid rewriting published history (force-push, rebases on shared branches) unless the user explicitly asks and confirms branch/remote context.
-- Always sanity-check for secrets/credentials before committing.
+优先选择小型原子化提交：易于评审，且在出问题时易于回滚。
 
-## Important
+除非用户明确要求，否则不运行测试或编译。
 
-Don't have "Co-Author: ..." in message.
+严禁跳过钩子：除非用户明确要求并了解风险，否则不得使用 --no-verify。
 
-## Workflow Decision Tree
+避免重写已发布的历史：除非用户明确要求并确认了分支/远程上下文，否则不要进行强制推送（force-push）或在公共分支上变基。
 
-1. Identify what the user wants:
+提交前必做安全自检：检查是否包含密钥或凭据。
 
-- Single commit for current work
-- Split work into multiple commits
-- Amend the last commit
-- Fix up/squash into an earlier commit (requires rebase)
+## 重要(优先级最高)
 
-2. Inspect repo state:
-   - `git status -sb`
-   - Review changes: `git diff` and `git diff --staged`
-   - Confirm target branch: `git branch --show-current` and (if needed) `git remote -v`
-3. Choose staging strategy:
-   - Stage all: `git add -A`
-   - Stage per file: `git add path/to/file`
-   - Stage hunks interactively: `git add -p`
-4. Write commit message and commit:
-   - Conventional commits (optional) or standard imperative summary
-5. Post-commit verification:
-   - `git show --stat`
-   - Optional: `git log -n 5 --oneline --decorate`
+提交信息中不要包含 "Co-Author: ..." 字段。
 
-## Quick Start: Create One Good Commit
+## 工作流
 
-1. Review what will be committed:
-   - `git status -sb`
-   - `git diff --staged` (if already staged)
-   - Otherwise: `git diff`
-2. Stage intentionally:
-   - `git add -p` (recommended) or `git add -A`
-3. Re-review staged diff:
-   - `git diff --staged`
-4. Commit:
-   - `git commit` (use editor) or `git commit -m "message"`
-5. Verify:
-   - `git show --stat`
+- 检查仓库状态：
 
-## Commit Message Quality Bar
+git status -sb
 
-Always aim for:
+- 审查更改：git diff 和 git diff --staged
 
-- **Subject**: imperative mood, clear intent, ideally ≤ 50 characters in Chinese (repo norms may vary)
+- 确认目标分支：git branch --show-current 以及（必要时）git remote -v
 
-### Conventional Commits (Optional)
+- 分析此次修改适用于单次提交还是拆分成多次提交
 
-If the repo/team uses Conventional Commits, use:
+- 选择暂存策略：
 
-- `feat(scope): ...`
-- `fix(scope): ...`
-- `refactor(scope): ...`
-- `docs(scope): ...`
-- `test(scope): ...`
-- `chore(scope): ...`
+  - 暂存全部：git add -A
 
-### Examples (Good)
+  - 按文件暂存：git add path/to/file
 
-- `fix: 拒绝过期令牌`
-- `feat: 支持引号短语`
-- `refactor: 规范化错误响应）`
+- 编写提交信息并执行提交：
 
-### Examples (Needs Work)
+  - 使用约定式提交（可选）或标准的祈使句摘要。
 
-- `update stuff` (too vague)
-- `fix` (no context)
-- `WIP` (avoid unless explicitly requested by the user/workflow)
+- 提交后验证：
 
-## Common Workflows
+  - git show --stat
+    可选：git log -n 5 --oneline --decorate
 
-### Split Changes Into Multiple Commits
+## 提交信息质量标准
+始终追求：
 
-1. Decide slices (by feature/bugfix/refactor) and list the files/hunks per slice.
-2. Reset staging to start clean:
-   - `git reset`
-3. For each slice:
-   - Stage hunks: `git add -p` (repeat until slice complete)
-   - Verify: `git diff --staged`
-   - Commit with a message that matches only that slice.
-4. Confirm remaining work:
-   - `git status -sb` and `git diff`
+标题 (Subject)：使用祈使句，意图明确，中文建议在 50 个字符以内（视仓库习惯而定）。
 
-### Amend the Last Commit
+约定式提交 (可选)
+如果仓库/团队使用约定式提交 (Conventional Commits)，请遵循：
 
-Use only if the last commit is not yet pushed/shared (or the user explicitly confirms rewriting history is OK).
+feat(scope): ...（新功能）
 
-- Amend message only: `git commit --amend`
-- Amend content: stage changes then `git commit --amend`
-- Keep message: `git commit --amend --no-edit`
+fix(scope): ...（修复）
 
-### Fixup/Squash Into an Earlier Commit (Autosquash)
+refactor(scope): ...（重构）
 
-1. Identify the target commit:
-   - `git log --oneline --decorate -n 20`
-2. Create a fixup commit:
-   - Stage changes, then `git commit --fixup <sha>`
-3. Autosquash via interactive rebase:
-   - `git rebase -i --autosquash <base>`
+docs(scope): ...（文档）
 
-If the user is unsure about `<base>`, pick the parent of the target commit or rebase onto the branch point (ask if uncertain).
+test(scope): ...（测试）
 
-## Safety Checklist (Before Committing)
+chore(scope): ...（日常事务）
 
-- Look for secrets in diffs: tokens, private keys, `.env`, credentials, connection strings.
-- Avoid committing generated artifacts unless repo expects them.
-- Ensure the commit contains only intended files/hunks: `git diff --staged`.
-- If renames/moves occurred, prefer `git status` and `git diff --staged --name-status` to confirm.
+示例（推荐）
+fix: 拒绝过期令牌
 
-## Questions to Ask the User (If Unspecified)
+feat: 支持引号短语
 
-- Should the commit message follow Conventional Commits?
-- Is it OK to amend/rewrite history on this branch (has it been pushed/shared)?
-- Should the commit be signed (`-S`) or include `--signoff`?
-- Are there multiple logical changes that should be split into separate commits?
+refactor: 规范化错误响应
+
+示例（需改进）
+update stuff（太模糊）
+
+fix（缺乏上下文）
+
+WIP（除非用户或特定工作流明确要求，否则应避免）
+
